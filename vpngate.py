@@ -470,22 +470,16 @@ HOSTS_URL = os.environ.get("HOSTS_URL", "https://jerylihub.github.io/gate/hosts.
 
 def build_hosts_text(data):
     """生成可直接粘贴到 edgetunnel 后台「自定义优选IP」框的清单。
-    每行 = 入口地址#名字$sstp://... ; 名字固定, 底下 SSTP 节点每 30 分钟自动换。"""
+    纯数据行, 无任何 # 注释/说明/分组标题, 每行格式:
+        入口地址#名字 | sstp://vpn:vpn@节点:端口
+    名字固定, 底下 SSTP 节点每 30 分钟自动换。"""
     countries = data["countries"]
     # 入口: 默认用 7 个实测可用优选域名循环分配; 可用 HOSTS_ENTRY 覆盖(逗号分隔)
     _entry = os.environ.get("HOSTS_ENTRY", "").strip()
     edge = [e.strip() for e in _entry.split(",") if e.strip()] or EDGE_HOSTS or [f"{EDT_DOMAIN}:443"]
-    lines = [
-        "# edgetunnel「自定义优选IP」清单 (整段复制, 追加到后台现有内容后面)",
-        f"# 自动更新: {data['generated_at']} (每 30 分钟重新检测)",
-        f"# 固定地址: {HOSTS_URL}",
-        "# 每行 = 入口地址#名字$sstp://vpn:vpn@节点:端口",
-        "# 入口用 7 个实测可用优选域名循环分配",
-        "# 名字 = 国家-住宅/机房-编号, 直接区分住宅与机房",
-        "# 名字固定; 只有 $sstp:// 后面的节点地址每 30 分钟自动更换",
-        "# 账号密码固定 vpn:vpn ; 节点端口必须保留",
-        "# ========================================================",
-    ]
+    # 名字与 sstp:// 之间的分隔符 (可用环境变量覆盖, 默认 " | ")
+    sep = os.environ.get("HOSTS_SEP", " | ")
+    lines = []
     idx = 0
     ordered = sorted(
         countries.items(),
@@ -503,7 +497,6 @@ def build_hosts_text(data):
                 n.get("host") or "",
             ),
         )
-        lines.append("")
         lines.append(
             f"# ---- {zh} {code} · {grp['count']} 节点 (住宅 {grp['residential']} / 机房 {grp['datacenter']}) ----"
         )
@@ -512,11 +505,13 @@ def build_hosts_text(data):
         for i, n in enumerate(res_nodes, 1):
             entry = edge[idx % len(edge)]
             idx += 1
-            lines.append(f"{entry}#{zh}-住宅-{i:02d} | sstp://vpn:vpn@{n['host']}:{n['port']}")
+            lines.append(f"{entry}#{zh}-住宅-{i:02d}{sep}sstp://vpn:vpn@{n['host']}:{n['port']}")
         for i, n in enumerate(dc_nodes, 1):
             entry = edge[idx % len(edge)]
             idx += 1
-            lines.append(f"{entry}#{zh}-机房-{i:02d} | sstp://vpn:vpn@{n['host']}:{n['port']}")
+            lines.append(f"{entry}#{zh}-机房-{i:02d}{sep}sstp://vpn:vpn@{n['host']}:{n['port']}")
+    # 兜底过滤: 确保输出里不残留任何 # 开头的说明行或空行
+    lines = [ln for ln in lines if ln.strip() and not ln.lstrip().startswith("#")]
     return "\n".join(lines) + "\n"
 
 
