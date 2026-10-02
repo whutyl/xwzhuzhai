@@ -464,7 +464,10 @@ EDGE_HOSTS = [
        "www.galgamex.net:443,cdn.jwcmdr.top:443,cf.1o.ee:443,p.etime.vip:443,"
        "www.5h.com:443,kickstarter.com:443,fn.130519.xyz:443,cdns.doon.eu.org:443,"
        "www.mc.js.cool:443,www.akasantech.com:443,staticdelivery.nexusmods.com:443,cdn.2x.nz:443,"
-       "01-cctv.com:443,jobsdb.com:443",
+       "01-cctv.com:443,jobsdb.com:443,cf-cname.xingpingcn.top:2053,cf.877774.xyz:2096,"
+       "vps.cheng2001.top:8443,auto.dolby.dpdns.org:2096,eii.at:8443,cf.itv888.cn:8443,"
+       "www.wuduanyun.com:2087,bbs.alipansou.com:8443,www.akasantech.com:2096,www.jp.pima.gov:2096,"
+       "constitution.congress.gov:2083,www.sage.com:2083",
     ).split(",")
     if h.strip()
 ]
