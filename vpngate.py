@@ -412,10 +412,19 @@ CHAIN_URL = os.environ.get("CHAIN_URL", "https://jerylihub.github.io/gate/chains
 
 def build_chains_text(data):
     """生成 edgetunnel 链式代理清单: 按国家分组, 每国编号固定, 住宅优先, 延迟升序。
-    纯数据行输出, 无任何 # 注释/说明/分组标题; 每行 = 「名字 + $sstp://vpn:vpn@host:port」,
-    名字不变, 指令每 30 分钟自动换。"""
+    每行 = 「名字 + $sstp://vpn:vpn@host:port」, 名字不变, 指令每 30 分钟自动换。"""
     countries = data["countries"]
-    lines = []
+    lines = [
+        "# VPN Gate SSTP 节点 -> edgetunnel 链式代理清单",
+        f"# 自动更新: {data['generated_at']} (每 30 分钟重新检测)",
+        f"# 固定地址: {CHAIN_URL}",
+        "#",
+        "# 用法: 在 edgetunnel 节点备注里直接粘贴下面任意一行 (名字与指令连写)",
+        "#   例: 日本-住宅-01$sstp://vpn:vpn@vpnxxx.opengw.net:443",
+        "# 名字保持不变, 只有 $sstp:// 后面的地址每 30 分钟自动更换",
+        "# 账号密码固定 vpn:vpn ; 端口必须保留",
+        "# ========================================================",
+    ]
     ordered = sorted(
         countries.items(),
         key=lambda kv: (-int(kv[1].get("count") or 0), str(kv[1].get("code") or kv[0])),
@@ -432,6 +441,7 @@ def build_chains_text(data):
                 n.get("host") or "",
             ),
         )
+        lines.append("")
         lines.append(
             f"# ---- {zh} {code} · {grp['count']} 节点 (住宅 {grp['residential']} / 机房 {grp['datacenter']}) ----"
         )
@@ -441,8 +451,6 @@ def build_chains_text(data):
             lines.append(f"{zh}-住宅-{i:02d}$sstp://vpn:vpn@{n['host']}:{n['port']}")
         for i, n in enumerate(dc_nodes, 1):
             lines.append(f"{zh}-机房-{i:02d}$sstp://vpn:vpn@{n['host']}:{n['port']}")
-    # 兜底过滤: 确保输出里不残留任何 # 开头的说明行或空行
-    lines = [ln for ln in lines if ln.strip() and not ln.lstrip().startswith("#")]
     return "\n".join(lines) + "\n"
 
 
@@ -555,10 +563,17 @@ def _socks5_account(address, default_port=80):
 
 def build_sub_text(data):
     """生成 edgetunnel 完整 vless:// 订阅 (链式代理编码在 path)。
-    填进 edgetunnel 后台「订阅链接」URL, 客户端定时拉取即可自动轮换。
-    纯数据行输出, 无任何 # 注释/说明/分组标题。"""
+    填进 edgetunnel 后台「订阅链接」URL, 客户端定时拉取即可自动轮换。"""
     countries = data["countries"]
-    lines = []
+    lines = [
+        "# edgetunnel 完整订阅 (vless://) —— 填进后台「订阅链接」URL",
+        f"# 自动更新: {data['generated_at']} (每 30 分钟重新检测)",
+        f"# 固定地址: {SUB_URL}",
+        f"# 节点域名: {EDT_DOMAIN} (传输 ws / TLS / fingerprint {EDT_FINGERPRINT})",
+        "# 名字固定; $sstp:// 链式代理(编码在 path)每 30 分钟自动更换",
+        "# 账号密码固定 vpn:vpn ; 节点端口已编码进 path",
+        "# ========================================================",
+    ]
     ordered = sorted(
         countries.items(),
         key=lambda kv: (-int(kv[1].get("count") or 0), str(kv[1].get("code") or kv[0])),
@@ -587,10 +602,7 @@ def build_sub_text(data):
                 f"&path={path}&encryption=none&alpn=#{quote(name, safe='')}"
             )
             lines.append(link)
-    # 兜底过滤: 确保输出里不残留任何 # 开头的说明行或空行
-    lines = [ln for ln in lines if ln.strip() and not ln.lstrip().startswith("#")]
     return "\n".join(lines) + "\n"
-
 
 def write_outputs(data):
     os.makedirs(PUBLIC_DIR, exist_ok=True)
